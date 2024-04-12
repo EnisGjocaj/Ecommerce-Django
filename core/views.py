@@ -5,6 +5,17 @@ from item.models import Category, Item
 from .forms import SignupForm
 
 # Create your views here.
+
+def indexInfo(request):
+	items = Item.objects.filter(is_sold=False)[0:6]
+	categories = Category.objects.all()
+
+	return render(request, "core/indexInfo.html", {
+		"categories": categories,
+		"items": items,
+	})
+
+
 def index(request):
 	items = Item.objects.filter(is_sold=False)[0:6]
 	categories = Category.objects.all()

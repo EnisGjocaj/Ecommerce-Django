@@ -31,7 +31,8 @@ def new_conversation(request, item_pk):
 			conversation_message = form.save(commit=False)
 			conversation_message.conversation = conversation
 			conversation_message.created_by = request.user
-			conversation.save()
+			# conversation.save()
+			conversation_message.save()
 
 			return redirect('item:detail', pk=item_pk)
 	else:
@@ -41,35 +42,67 @@ def new_conversation(request, item_pk):
 		'form': form,
 	})
 
+# @login_required
+# def index(request):
+# 	conversation = Conversation.objects.filter(members__in=[request.user.id])
+
+# 	return render(request, 'conversation/inbox.html', {
+# 		'conversation': conversation,
+# 	})
+
 @login_required
 def index(request):
-	conversation = Conversation.objects.filter(members__in=[request.user.id])
+    if request.user.is_staff:
+        # If the user is an admin, fetch all conversations
+        conversations = Conversation.objects.all()
+    else:
+        # If the user is a regular user, fetch conversations initiated by the user
+        conversations = Conversation.objects.filter(members__in=[request.user.id])
 
-	return render(request, 'conversation/inbox.html', {
-		'conversation': conversation,
-	})
+    return render(request, 'conversation/inbox.html', {
+        'conversations': conversations,
+    })
+
 
 @login_required
 def detail(request, pk):
-	conversation = Conversation.objects.filter(members__in=[request.user.id]).get(pk=pk)
+    conversation = Conversation.objects.get(pk=pk)
 
-	if request.method == "POST":
-		form = ConversationMessageForm(request.POST)
-
-		if form.is_valid():
-			conversation_message = form.save(commit=False)
-			conversation_message.conversation = conversation
-			conversation_message.created_by = request.user
-			conversation_message.save()
-
-			conversation.save()
-
-			return redirect('conversation:detail', pk=pk)
-	else:
-		form = ConversationMessageForm()
+    # Ensure that the user is a member of the conversation or is an admin
+    if request.user.is_staff or request.user in conversation.members.all():
+        messages = conversation.messages.all()  # Use the correct related_name here
+        return render(request, "conversation/detail.html", {
+            'conversation': conversation,
+            'messages': messages,
+        })
+    else:
+        # Redirect or display an error message if the user does not have permission to view this conversation
+        return HttpResponse("You do not have permission to view this conversation.")
 
 
-	return render(request, "conversation/detail.html", {
-		'conversation': conversation,
-		'form': form,
-	})
+
+
+# @login_required
+# def detail(request, pk):
+# 	conversation = Conversation.objects.filter(members__in=[request.user.id]).get(pk=pk)
+
+# 	if request.method == "POST":
+# 		form = ConversationMessageForm(request.POST)
+
+# 		if form.is_valid():
+# 			conversation_message = form.save(commit=False)
+# 			conversation_message.conversation = conversation
+# 			conversation_message.created_by = request.user
+# 			conversation_message.save()
+
+# 			conversation.save()
+
+# 			return redirect('conversation:detail', pk=pk)
+# 	else:
+# 		form = ConversationMessageForm()
+
+
+# 	return render(request, "conversation/detail.html", {
+# 		'conversation': conversation,
+# 		'form': form,
+# 	})
